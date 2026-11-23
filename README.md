@@ -1,8 +1,13 @@
 # MultiExtract
 
-Pulls item codes out of paginated listings, CSV exports, email bodies and attachments — then answers the question that actually matters: **did we get all of them?**
+Item codes arrive scattered across paginated listings, CSV exports, email bodies and
+attachments, next to order numbers, tracking IDs and hashes that look just like them.
+Extracting them is the easy half. MultiExtract also answers the question a total cannot: **did
+we get all of them?** It validates every candidate against the code's check character, and for
+each source says whether completeness is proven, contradicted (a page never arrived), or
+impossible to know.
 
-No model. The accuracy problem here is identifier validation and completeness accounting, both of which are arithmetic.
+All of it is identifier rules and bookkeeping; nothing is learned.
 
 ---
 
