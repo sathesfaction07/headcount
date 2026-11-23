@@ -42,7 +42,7 @@ def _load(manifest: Path | None):
 
 
 @click.group()
-@click.version_option("0.1.0", prog_name="multi-extract")
+@click.version_option("0.1.0", prog_name="headcount")
 def main() -> None:
     """Extract item codes from mixed sources and account for what may have been missed."""
 

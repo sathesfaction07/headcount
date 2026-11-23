@@ -1,4 +1,4 @@
-# MultiExtract — Technical Architecture
+# Headcount — Technical Architecture
 
 ## Overview
 
@@ -16,7 +16,7 @@ accounting, both arithmetic.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                          CLI (multi-extract)                                  │
+│                          CLI (headcount)                                  │
 │                                                                              │
 │  extract   scan -> grade -> dedupe -> account for completeness                │
 │            EXIT 1 on a DEMONSTRABLE problem: a page gap or a shortfall.       │
@@ -154,7 +154,7 @@ would have read 0/0 and reported something less alarming.
 ## Data Flow
 
 ```
-1.  multi-extract measure -i data/manifest.jsonl -k data/truth.txt
+1.  headcount measure -i data/manifest.jsonl -k data/truth.txt
 2.  load_documents -> 10 documents across 5 sources
       pagination metadata (page, declared_total) comes from the MANIFEST, because a
       filename cannot carry it and it is the whole basis of completeness accounting

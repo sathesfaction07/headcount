@@ -1,8 +1,8 @@
-# MultiExtract
+# Headcount
 
 Item codes arrive scattered across paginated listings, CSV exports, email bodies and
 attachments, next to order numbers, tracking IDs and hashes that look just like them.
-Extracting them is the easy half. MultiExtract also answers the question a total cannot: **did
+Extracting them is the easy half. Headcount also answers the question a total cannot: **did
 we get all of them?** It validates every candidate against the code's check character, and for
 each source says whether completeness is proven, contradicted (a page never arrived), or
 impossible to know.
@@ -79,18 +79,18 @@ Five verdicts, because "we got everything" and "we cannot tell whether we got ev
 bash setup.sh                 # derives the checksum properties, not just installs
 source .venv/bin/activate
 
-multi-extract doctor
-multi-extract extract  -i data/manifest.jsonl
-multi-extract measure  -i data/manifest.jsonl -k data/truth.txt
-multi-extract extract  -i data/manifest.jsonl -t shaped     # see the trade
-multi-extract check    K7X2M9QR4J
-multi-extract detect   some-attachment.txt
+headcount doctor
+headcount extract  -i data/manifest.jsonl
+headcount measure  -i data/manifest.jsonl -k data/truth.txt
+headcount extract  -i data/manifest.jsonl -t shaped     # see the trade
+headcount check    K7X2M9QR4J
+headcount detect   some-attachment.txt
 ```
 
 `check` explains a single token:
 
 ```
-$ multi-extract check E4G7VSUOD6
+$ headcount check E4G7VSUOD6
   input      'E4G7VSUOD6'
   normalised 'E4G7VSUOD6'
   tier       shaped

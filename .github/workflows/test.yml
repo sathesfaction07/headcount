@@ -29,7 +29,7 @@ jobs:
         run: pytest -q --cov=multi_extract --cov-report=term-missing
 
       - name: Doctor runs with no credentials and no network
-        run: multi-extract doctor -i data/manifest.jsonl -k data/truth.txt
+        run: headcount doctor -i data/manifest.jsonl -k data/truth.txt
 
       - name: Every known code actually validates
         # A stale literal in truth.txt would make every recall figure quietly wrong.
@@ -88,7 +88,7 @@ jobs:
       - name: The shipped corpus behaves as documented
         run: |
           # Non-zero is expected: the corpus contains a deliberately dropped page.
-          multi-extract extract -i data/manifest.jsonl -o /tmp/ci-out || true
+          headcount extract -i data/manifest.jsonl -o /tmp/ci-out || true
           python - <<'PY'
           import json
           payload = json.load(open("/tmp/ci-out/report.json"))
@@ -109,7 +109,7 @@ jobs:
 
       - name: The strict tier reaches full precision
         run: |
-          multi-extract measure -i data/manifest.jsonl -k data/truth.txt \
+          headcount measure -i data/manifest.jsonl -k data/truth.txt \
             -o /tmp/ci-measure || true
           python - <<'PY'
           import json
@@ -128,16 +128,16 @@ jobs:
       - name: extract gates on a demonstrable gap but not on an unverifiable source
         run: |
           # Exits 1 because of the page gap.
-          ! multi-extract extract -i data/manifest.jsonl
-          multi-extract extract -i data/manifest.jsonl | grep -q 'gap_in_pages'
-          multi-extract extract -i data/manifest.jsonl | grep -q 'CANNOT be determined'
+          ! headcount extract -i data/manifest.jsonl
+          headcount extract -i data/manifest.jsonl | grep -q 'gap_in_pages'
+          headcount extract -i data/manifest.jsonl | grep -q 'CANNOT be determined'
           echo "gated on the gap, reported the unknowns"
 
       - name: A mismatched attachment is detected by content
         run: |
           printf 'PK\x03\x04' > /tmp/export.txt
-          ! multi-extract detect /tmp/export.txt
-          multi-extract detect /tmp/export.txt | grep -q 'content is zip'
+          ! headcount detect /tmp/export.txt
+          headcount detect /tmp/export.txt | grep -q 'content is zip'
           echo "content wins over extension"
 
   test-windows:

@@ -258,12 +258,12 @@ Setup complete.
 
   source .venv/bin/activate
 
-  multi-extract doctor
-  multi-extract extract  -i data/manifest.jsonl
-  multi-extract measure  -i data/manifest.jsonl -k data/truth.txt
-  multi-extract extract  -i data/manifest.jsonl -t shaped     # see the trade
-  multi-extract check    <a-token>
-  multi-extract detect   some-attachment.txt
+  headcount doctor
+  headcount extract  -i data/manifest.jsonl
+  headcount measure  -i data/manifest.jsonl -k data/truth.txt
+  headcount extract  -i data/manifest.jsonl -t shaped     # see the trade
+  headcount check    <a-token>
+  headcount detect   some-attachment.txt
 
 `extract` exits non-zero only for a DEMONSTRABLE completeness problem -- a gap in page
 numbers or a shortfall against a declared total. It does NOT fail on a source that
