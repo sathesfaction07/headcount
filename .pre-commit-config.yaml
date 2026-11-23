@@ -1,0 +1,40 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      # The corpus is sample data the property tests assert against, and every code in
+      # truth.txt must actually validate -- a stale literal there would make the recall
+      # numbers quietly wrong.
+      - id: corpus-is-consistent
+        name: the shipped corpus loads and every known code validates
+        entry: >
+          python -c "import sys; sys.path.insert(0, 'src');
+          from pathlib import Path;
+          from multi_extract.sources import load_documents, load_truth;
+          from multi_extract.identity import is_valid;
+          d, p = load_documents(Path('data/manifest.jsonl'));
+          t = load_truth(Path('data/truth.txt'));
+          assert not p, p;
+          bad = sorted(c for c in t if not is_valid(c));
+          assert not bad, f'truth.txt holds {len(bad)} token(s) that do not validate: {bad[:3]}';
+          print(f'{len(d)} documents, {len(t)} codes, all valid')"
+        language: system
+        pass_filenames: false
+        files: ^data/

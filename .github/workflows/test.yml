@@ -1,0 +1,141 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Test
+        run: pytest -q --cov=multi_extract --cov-report=term-missing
+
+      - name: Doctor runs with no credentials and no network
+        run: multi-extract doctor -i data/manifest.jsonl -k data/truth.txt
+
+      - name: Every known code actually validates
+        # A stale literal in truth.txt would make every recall figure quietly wrong.
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from multi_extract.identity import is_valid
+          from multi_extract.sources import load_truth
+          truth = load_truth(Path("data/truth.txt"))
+          bad = sorted(code for code in truth if not is_valid(code))
+          assert not bad, f"{len(bad)} non-validating token(s) in truth.txt: {bad[:3]}"
+          print(len(truth), "codes, all valid")
+          PY
+
+      - name: A code embedded in a longer run is still found
+        # A non-overlapping fixed-width scan consumed greedily from the left, so a code not
+        # starting on a multiple-of-ten boundary inside a longer run was never seen at all.
+        run: |
+          python - <<'PY'
+          from multi_extract.core.extract import MAX_ENCLOSING_RUN, candidates_in
+          from multi_extract.identity import make_code
+          from multi_extract.models import Document
+
+          code = make_code("K7X2M9QR4")
+          for prefix, suffix in [("", ""), ("XX", ""), ("", "99"), ("req9f2", "abc")]:
+              text = f"{prefix}{code}{suffix}"
+              found = {c.token for c in candidates_in(Document(source_id="t", text=text))}
+              assert code in found, f"{text} lost the code"
+
+          digest = "dd4e0a91e448d181b9ceb5ebea340561"
+          assert len(digest) > MAX_ENCLOSING_RUN
+          assert candidates_in(Document(source_id="t", text=digest)) == []
+          print("embedded codes found; digests not mined")
+          PY
+
+      - name: The checksum catches every adjacent transposition
+        run: |
+          python - <<'PY'
+          import random, string
+          from multi_extract.identity import ALPHABET, BODY_LENGTH, check_character
+          rng = random.Random(2026)
+          checked = 0
+          for _ in range(4000):
+              body = rng.choice(string.ascii_uppercase) + "".join(
+                  rng.choice(ALPHABET) for _ in range(8))
+              i = rng.randrange(BODY_LENGTH - 1)
+              if body[i] == body[i + 1]:
+                  continue
+              s = list(body); s[i], s[i + 1] = s[i + 1], s[i]
+              checked += 1
+              assert check_character("".join(s)) != check_character(body)
+          assert checked > 3000
+          print(checked, "transpositions, all detected")
+          PY
+
+      - name: The shipped corpus behaves as documented
+        run: |
+          # Non-zero is expected: the corpus contains a deliberately dropped page.
+          multi-extract extract -i data/manifest.jsonl -o /tmp/ci-out || true
+          python - <<'PY'
+          import json
+          payload = json.load(open("/tmp/ci-out/report.json"))
+          summary = payload["summary"]
+          assert summary["unique_codes"] == 84, summary
+          assert summary["occurrences"] == 148, summary
+          assert summary["sources"] == 5, summary
+          assert summary["problem_sources"] == ["listing-b"], summary
+          assert sorted(summary["unverifiable_sources"]) == ["email-d", "export-c"], summary
+
+          verdicts = {i["source_id"]: i["verdict"] for i in payload["completeness"]}
+          assert verdicts["listing-b"] == "gap_in_pages", verdicts
+          assert verdicts["listing-a"] == "complete", verdicts
+          gap = next(i for i in payload["completeness"] if i["source_id"] == "listing-b")
+          assert gap["missing_pages"] == [3], gap
+          print("summary:", summary)
+          PY
+
+      - name: The strict tier reaches full precision
+        run: |
+          multi-extract measure -i data/manifest.jsonl -k data/truth.txt \
+            -o /tmp/ci-measure || true
+          python - <<'PY'
+          import json
+          accuracy = json.load(open("/tmp/ci-measure/report.json"))["accuracy"]
+          tiers = {t["tier"]: t for t in accuracy["tiers"]}
+          assert accuracy["truth_size"] == 90, accuracy
+          assert tiers["validated"]["precision"] == 1.0, tiers["validated"]
+          assert tiers["validated"]["false_positives"] == 0, tiers["validated"]
+          assert tiers["validated"]["precision"] >= tiers["shaped"]["precision"]
+          # The only misses are the six codes on the page that was never fetched.
+          assert len(accuracy["missed"]) == 6, accuracy["missed"]
+          assert accuracy["spurious"] == [], accuracy["spurious"]
+          print("validated:", tiers["validated"])
+          PY
+
+      - name: extract gates on a demonstrable gap but not on an unverifiable source
+        run: |
+          # Exits 1 because of the page gap.
+          ! multi-extract extract -i data/manifest.jsonl
+          multi-extract extract -i data/manifest.jsonl | grep -q 'gap_in_pages'
+          multi-extract extract -i data/manifest.jsonl | grep -q 'CANNOT be determined'
+          echo "gated on the gap, reported the unknowns"
+
+      - name: A mismatched attachment is detected by content
+        run: |
+          printf 'PK\x03\x04' > /tmp/export.txt
+          ! multi-extract detect /tmp/export.txt
+          multi-extract detect /tmp/export.txt | grep -q 'content is zip'
+          echo "content wins over extension"
