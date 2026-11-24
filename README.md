@@ -150,7 +150,7 @@ req9f2K7X2M9QR4Jabc  -> REQ9F2K7X2
 
 This is a **false negative**, which is the failure mode nothing in the output reveals — you cannot see what you did not find. It arises from broken exports and concatenated log fields, both of which the spec calls out.
 
-**And the docstring I had written to justify the design was wrong.** I claimed a word-boundary-anchored scan "would suppress a genuine code embedded in a longer path like `/items/CODE/reviews`". It does not: slashes are non-word characters, so `\b` boundaries exist and the code matches fine. I only found out by probing it. The design rested on a premise I had never checked, which is the second time in this portfolio that an unverifiable comment turned out to be false.
+**And the docstring I had written to justify the design was wrong.** I claimed a word-boundary-anchored scan "would suppress a genuine code embedded in a longer path like `/items/CODE/reviews`". It does not: slashes are non-word characters, so `\b` boundaries exist and the code matches fine. I only found out by probing it. The design rested on a premise I had never checked, which is the second time across the sibling projects that an unverifiable comment turned out to be false.
 
 **Fixing it made things measurably worse, and that is why the fix has a cap.** Window-scanning every long run restored the embedded-code recall and then:
 
@@ -190,7 +190,7 @@ It is not a perfect check and the docs do not pretend otherwise: single-characte
 
 **The tier funnel shows two columns that could both be called "validated".** "Graded AT" counts tokens that stopped at a tier; "at or above" is what a run reporting at that tier includes. They differ sharply — 148 versus 148 at the strict tier but 0 versus 153 at the loosest. The header names both, and that ambiguity caught one of my own integration tests, which had grabbed the funnel row instead of the accuracy row.
 
-**No Playwright, despite the spec suggesting it.** Fetching is a solved problem handled by a sibling project. What is unsolved here is deciding whether a ten-character token is an identifier, and that needs no browser. The manifest format carries the pagination metadata a fetcher would produce, so the two compose.
+**No Playwright, despite the project brief suggesting it.** Fetching is a solved problem handled by a sibling project. What is unsolved here is deciding whether a ten-character token is an identifier, and that needs no browser. The manifest format carries the pagination metadata a fetcher would produce, so the two compose.
 
 ---
 
